@@ -1,0 +1,27 @@
+{
+  "name": "weatherflux/weatherflux",
+  "type"  : "library",
+  "description": "A gateway to listen WeatherFlow stations on a local network and write weather data in InfluxDB 2.",
+  "keywords": ["weatherflow", "weather", "influxdb"],
+  "minimum-stability": "stable",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Pierre Lannoy",
+      "email": "pierre@lannoy.fr"
+    }
+  ],
+  "homepage": "https://github.com/Pierre-Lannoy/WeatherFlux",
+  "require": {
+    "php": ">=7.4",
+    "ext-json": "*",
+    "ext-posix": "*",
+    "monolog/monolog": "~2.2.0",
+    "observableworker/observableworker": ">=5.2.0",
+    "influxdata/influxdb-client-php": "~1.9.0",
+    "khill/php-duration": "~1.0"
+  },
+  "autoload": {
+    "psr-4": {"WeatherFlux\\": "./src"}
+  }
+}

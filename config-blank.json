@@ -1,0 +1,29 @@
+{
+  "influxb": {
+    "url":"http://localhost:8086",
+    "org":"my-org",
+    "token":"my-token",
+    "bucket":"my-bucket"
+  },
+  "host": {
+    "override":"",
+    "drop":false
+  },
+  "isu-mode":"derived",
+  "filters":["evt_precip","evt_strike","rapid_wind","obs_air","obs_sky","obs_st","device_status","hub_status"],
+  "tags": {
+    "HB*": {
+      "model":"WeatherFlow Hub"
+    },
+    "AR*": {
+      "model":"WeatherFlow Air"
+    },
+    "SK*":{
+      "model":"WeatherFlow Sky"
+    },
+    "ST*":{
+      "model":"WeatherFlow Tempest"
+    }
+  },
+  "fields":{}
+}
