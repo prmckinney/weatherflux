@@ -224,7 +224,7 @@ class Engine {
 		'obs_air' => [ 'time_epoch', 'pressure_station', 'temperature_air', 'r-humidity', 'strike_count', 'strike_distance', 'battery', 'report_interval' ],
 		'obs_sky' => [ 'time_epoch', 'illuminance_sun', 'uv', 'rain_accumulation', 'wind_lull', 'wind_average', 'wind_gust', 'wind_direction', 'battery', 'report_interval', 'irradiance_sun', 'rain_accumulation_local_day', 'precipitation_type', 'wind_sample_interval' ],
 		'obs_st' => [ 'time_epoch', 'wind_lull', 'wind_avg', 'wind_gust', 'wind_direction', 'wind_sample_interval', 'station_pressure', 'air_temperature', 'relative_humidity', 'illuminance', 'uv', 'solar_radiation', 'precip_accumulated', 'precipitation_type', 'lightning_strike_avg_distance', 'lightning_strike_count', 'battery', 'report_interval'],
-		'device_status' => [ 'uptime', 'voltage', 'firmware_revision', 'rssi', 'hub_rssi' ],
+		'device_status' => [ 'uptime', 'voltage', 'firmware_revision', 'rssi', 'hub_rssi', 'sensor_status' ],
 		'hub_status' => [ 'uptime', 'firmware_revision', 'rssi' ],
 	];
 
@@ -598,6 +598,9 @@ class Engine {
 			}
 			if ( array_key_exists( 'hub_rssi', $data ) ) {
 				$d[] = $data['hub_rssi'];
+			}
+			if ( array_key_exists( 'sensor_status', $data ) ) {
+				$d[] = $data['sensor_status'];
 			}
 		}
 		if ( array_key_exists( $data['type'], $this->fields ) && is_array( $this->fields[ $data['type'] ] ) && count( $this->fields[ $data['type'] ] ) === count( $d ) ) {
