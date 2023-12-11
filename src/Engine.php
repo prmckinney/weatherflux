@@ -495,7 +495,12 @@ class Engine {
 			$result['hub_sn'] = $data['hub_sn'];
 		}
 		if ( array_key_exists( 'serial_number', $data ) ) {
-			$result['serial_number'] = $data['serial_number'];
+			if ($data['type'] == 'hub_status') {
+				$result['hub_sn'] = $data['serial_number'];
+			}
+			else {
+				$result['serial_number'] = $data['serial_number'];
+			}
 		}
 		if ( array_key_exists( 'firmware_revision', $data ) ) {
 			$result['firmware_revision'] = $data['firmware_revision'];
