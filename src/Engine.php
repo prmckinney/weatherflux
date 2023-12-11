@@ -218,14 +218,14 @@ class Engine {
 	 * @var     array   $fields     Dynamic fields to process.
 	 */
 	private $fields = [
-		'evt_precip' => [ 'ts', 'hit' ],
-		'evt_strike' => [ 'ts', 'strike_distance', 'strike_energy', 'hit' ],
-		'rapid_wind' => [ 'ts', 'wind_speed', 'wind_direction', 'wind_sample_interval' ],
-		'obs_air' => [ 'ts', 'pressure_station', 'temperature_air', 'r-humidity', 'strike_count', 'strike_distance', 'battery', 'report_interval' ],
-		'obs_sky' => [ 'ts', 'illuminance_sun', 'uv', 'rain_accumulation', 'wind_lull', 'wind_average', 'wind_gust', 'wind_direction', 'battery', 'report_interval', 'irradiance_sun', 'rain_accumulation_local_day', 'precipitation_type', 'wind_sample_interval' ],
-		'obs_st' => [ 'ts', 'wind_lull', 'wind_average', 'wind_gust', 'wind_direction', 'wind_sample_interval', 'pressure_station', 'temperature_air', 'r-humidity', 'illuminance_sun', 'uv', 'irradiance_sun', 'rain_accumulation', 'precipitation_type', 'strike_distance', 'strike_count', 'battery', 'report_interval'],
-		'device_status' => [ 'uptime', 'voltage', 'firmware_revision', 'rssi_self', 'rssi_hub' ],
-		'hub_status' => [ 'uptime', 'firmware_revision', 'rssi_self' ],
+		'evt_precip' => [ 'time_epoch' ],
+		'evt_strike' => [ 'time_epoch', 'distance', 'energy' ],
+		'rapid_wind' => [ 'time_epoch', 'wind_speed', 'wind_direction' ],
+		'obs_air' => [ 'time_epoch', 'pressure_station', 'temperature_air', 'r-humidity', 'strike_count', 'strike_distance', 'battery', 'report_interval' ],
+		'obs_sky' => [ 'time_epoch', 'illuminance_sun', 'uv', 'rain_accumulation', 'wind_lull', 'wind_average', 'wind_gust', 'wind_direction', 'battery', 'report_interval', 'irradiance_sun', 'rain_accumulation_local_day', 'precipitation_type', 'wind_sample_interval' ],
+		'obs_st' => [ 'time_epoch', 'wind_lull', 'wind_avg', 'wind_gust', 'wind_direction', 'wind_sample_interval', 'station_pressure', 'air_temperature', 'relative_humidity', 'illuminance', 'uv', 'solar_radiation', 'precip_accumulated', 'precipitation_type', 'lightning_strike_avg_distance', 'lightning_strike_count', 'battery', 'report_interval'],
+		'device_status' => [ 'uptime', 'voltage', 'firmware_revision', 'rssi', 'hub_rssi' ],
+		'hub_status' => [ 'uptime', 'firmware_revision', 'rssi' ],
 	];
 
 	/**
@@ -234,7 +234,7 @@ class Engine {
 	 * @since   1.0.0
 	 * @var     array   $forgot_fields     Fields to forget.
 	 */
-	private $forgot_fields = [ 'ts', 'battery', 'precipitation_type', 'rain_accumulation_local_day' ];
+	private $forgot_fields = [ ];
 
 	/**
 	 * Do the units have to be chosen only in base ISU?
@@ -456,26 +456,29 @@ class Engine {
 	 * @since   1.0.0
 	 */
 	private function normalize( $data ) {
-		if ( array_key_exists( 'strike_distance', $data ) ) {  // convert to meters (m)
-			$data['strike_distance'] = 1000 * $data['strike_distance'];
+		if ( array_key_exists( 'time_epoch', $data ) ) {  // convert to meters (m)
+			$data['time_epoch'] = 1000 * $data['time_epoch'];
 		}
-		if ( array_key_exists( 'pressure_station', $data ) ) {  // convert to pascal (Pa)
-			$data['pressure_station'] = 100 * $data['pressure_station'];
-		}
-		if ( array_key_exists( 'report_interval', $data ) ) {  // convert to second (s)
-			$data['report_interval'] = 60 * $data['report_interval'];
-		}
-		if ( array_key_exists( 'rain_accumulation', $data ) ) {  // convert to meters (m)
-			$data['rain_accumulation'] = $data['rain_accumulation'] / 1000;
-		}
-		if ( $this->strict_isu ) {
-			if ( array_key_exists( 'temperature_air', $data ) ) {  // convert to kelvin (K)
-				$data['temperature_air'] = 273.15 + $data['temperature_air'];
-			}
-			if ( array_key_exists( 'wind_direction', $data ) ) {  // convert to radian (rad)
-				$data['wind_direction'] = ( pi() / 180 ) * $data['wind_direction'];
-			}
-		}
+		#if ( array_key_exists( 'strike_distance', $data ) ) {  // convert to meters (m)
+		#	$data['strike_distance'] = 1000 * $data['strike_distance'];
+		#}
+		#if ( array_key_exists( 'pressure_station', $data ) ) {  // convert to pascal (Pa)
+		#	$data['pressure_station'] = 100 * $data['pressure_station'];
+		#}
+		#if ( array_key_exists( 'report_interval', $data ) ) {  // convert to second (s)
+		#	$data['report_interval'] = 60 * $data['report_interval'];
+		#}
+		#if ( array_key_exists( 'rain_accumulation', $data ) ) {  // convert to meters (m)
+		#	$data['rain_accumulation'] = $data['rain_accumulation'] / 1000;
+		#}
+		#if ( $this->strict_isu ) {
+		#	if ( array_key_exists( 'temperature_air', $data ) ) {  // convert to kelvin (K)
+		#		$data['temperature_air'] = 273.15 + $data['temperature_air'];
+		#	}
+		#	if ( array_key_exists( 'wind_direction', $data ) ) {  // convert to radian (rad)
+		#		$data['wind_direction'] = ( pi() / 180 ) * $data['wind_direction'];
+		#	}
+		#}
 		return $data;
 	}
 
@@ -488,63 +491,72 @@ class Engine {
 	 */
 	private function get_tags( $data ) {
 		$result = [];
-		switch ( $data['type'] ) {
-			case 'evt_precip':
-				$result['event'] = 'precipitation';
-				break;
-			case 'evt_strike':
-				$result['event'] = 'strike';
-				break;
-			case 'obs_sky':
-			case 'obs_st':
-				if ( array_key_exists( 'obs', $data ) ) {
-					if ( 0 < count( $data['obs'] ) ) {
-						if ( is_array( $data['obs'][0] ) ) {
-							if ( count( $data['obs'][0] ) === count( $this->fields[ $data['type'] ] ) ) {
-								switch ( (int) $data['obs'][0][ 'obs_sky' === $data['type'] ? 12 : 13 ] ) {
-									case 1:
-										$result['precipitation_type'] = 'rain';
-										break;
-									case 2:
-										$result['precipitation_type'] = 'hail';
-										break;
-									default:
-										$result['precipitation_type'] = 'none';
-								}
-							} else {
-								self::$logger->warning( sprintf(  '%s returned an unknown data format for %s message.', $data['serial_number'], $data['type'] ) );
-							}
-						} else {
-							self::$logger->warning( sprintf(  '%s returned an unknown data format for %s message.', $data['serial_number'], $data['type'] ) );
-						}
-					} else {
-						self::$logger->warning( sprintf(  '%s returned an unknown data format for %s message.', $data['serial_number'], $data['type'] ) );
-					}
-				} else {
-					self::$logger->warning( sprintf(  '%s returned an unknown data format for %s message.', $data['serial_number'], $data['type'] ) );
-				}
-				break;
-			case 'device_status':
-				if ( array_key_exists( 'hub_sn', $data ) ) {
-					$result['hub'] = $data['hub_sn'];
-				}
-				$id = substr( $data['serial_number'], 0, 2 );
-				if ( array_key_exists( $id, $this->sensor_status ) && array_key_exists( 'sensor_status', $data ) ) {
-					$sensors = (int) $data['sensor_status'];
-					foreach ( $this->sensor_status[ $id ] as $key => $sensor ) {
-						$result[ $sensor[0] . '_sensor' ] = ( 1 === $sensors & $key ? $sensor[1] : 'ok' );
-					}
-				}
-				break;
-			case 'hub_status':
-				if ( array_key_exists( 'reset_flags', $data ) ) {
-					$flags = explode( ',', $data['reset_flags'] );
-					foreach( $this->reset_flags as $key => $flag ) {
-						$result[ $flag ] = ( in_array( $key, $flags ) ? 'yes' : 'no' );
-					}
-				}
-				break;
+		if ( array_key_exists( 'hub_sn', $data ) ) {
+			$result['hub_sn'] = $data['hub_sn'];
 		}
+		if ( array_key_exists( 'serial_number', $data ) ) {
+			$result['serial_number'] = $data['serial_number'];
+		}
+		if ( array_key_exists( 'firmware_revision', $data ) ) {
+			$result['firmware_revision'] = $data['firmware_revision'];
+		}
+		#switch ( $data['type'] ) {
+		#	case 'evt_precip':
+		#		$result['event'] = 'precipitation';
+		#		break;
+		#	case 'evt_strike':
+		#		$result['event'] = 'strike';
+		#		break;
+		#	case 'obs_sky':
+		#	case 'obs_st':
+		#		if ( array_key_exists( 'obs', $data ) ) {
+		#			if ( 0 < count( $data['obs'] ) ) {
+		#				if ( is_array( $data['obs'][0] ) ) {
+		#					if ( count( $data['obs'][0] ) === count( $this->fields[ $data['type'] ] ) ) {
+		#						switch ( (int) $data['obs'][0][ 'obs_sky' === $data['type'] ? 12 : 13 ] ) {
+		#							case 1:
+		#								$result['precipitation_type'] = 'rain';
+		#								break;
+		#							case 2:
+		#								$result['precipitation_type'] = 'hail';
+		#								break;
+		#							default:
+		#								$result['precipitation_type'] = 'none';
+		#						}
+		#					} else {
+		#						self::$logger->warning( sprintf(  '%s returned an unknown data format for %s message.', $data['serial_number'], $data['type'] ) );
+		#					}
+		#				} else {
+		#					self::$logger->warning( sprintf(  '%s returned an unknown data format for %s message.', $data['serial_number'], $data['type'] ) );
+		#				}
+		#			} else {
+		#				self::$logger->warning( sprintf(  '%s returned an unknown data format for %s message.', $data['serial_number'], $data['type'] ) );
+		#			}
+		#		} else {
+		#			self::$logger->warning( sprintf(  '%s returned an unknown data format for %s message.', $data['serial_number'], $data['type'] ) );
+		#		}
+		#		break;
+		#	case 'device_status':
+		#		if ( array_key_exists( 'hub_sn', $data ) ) {
+		#			$result['hub'] = $data['hub_sn'];
+		#		}
+		#		$id = substr( $data['serial_number'], 0, 2 );
+		#		if ( array_key_exists( $id, $this->sensor_status ) && array_key_exists( 'sensor_status', $data ) ) {
+		#			$sensors = (int) $data['sensor_status'];
+		#			foreach ( $this->sensor_status[ $id ] as $key => $sensor ) {
+		#				$result[ $sensor[0] . '_sensor' ] = ( 1 === $sensors & $key ? $sensor[1] : 'ok' );
+		#			}
+		#		}
+		#		break;
+		#	case 'hub_status':
+		#		if ( array_key_exists( 'reset_flags', $data ) ) {
+		#			$flags = explode( ',', $data['reset_flags'] );
+		#			foreach( $this->reset_flags as $key => $flag ) {
+		#				$result[ $flag ] = ( in_array( $key, $flags ) ? 'yes' : 'no' );
+		#			}
+		#		}
+		#		break;
+		#}
 		return $result;
 	}
 
@@ -560,11 +572,11 @@ class Engine {
 		$d      = [];
 		if ( array_key_exists( 'evt', $data ) ) {
 			$d = $data['evt'];
-			$d[] = 1;
+			//$d[] = 1;
 		}
 		if ( array_key_exists( 'ob', $data ) ) {
 			$d = $data['ob'];
-			$d[] = 0;
+			//$d[] = 0;
 		}
 		if ( array_key_exists( 'obs', $data ) ) {
 			if ( 0 < count( $data['obs'] ) ) {
@@ -601,6 +613,7 @@ class Engine {
 			}
 		}
 		return $this->normalize( $result );
+		#return $result;
 	}
 
 	/**
@@ -686,21 +699,26 @@ class Engine {
 	private function format_line( $data ) {
 		switch ( $data['type'] ) {
 			case 'evt_precip':
+				$result  = "weatherflow_evt_precip";
+				break;
 			case 'evt_strike':
-				$suffix = 'event';
+				$result  = "weatherflow_evt_strike";
 				break;
 			case 'rapid_wind':
+				$result = "weatherflow_rapid_wind";
+				break;
 			case 'obs_air':
 			case 'obs_sky':
 			case 'obs_st':
-				$suffix = 'observation';
+				$result  = "weatherflow_obs";
 				break;
 			case 'device_status':
+				$result  = "weatherflow_device_status";
+				break;
 			case 'hub_status':
-				$suffix = 'status';
+				$result  = "weatherflow_hub_status";
 				break;
 		}
-		$result  = $data['serial_number'] . '_' . $suffix;
 		$tagline = $this->merge_items( $this->get_tags( $data ), $this->static_tags, $data['serial_number'] );
 		if ( '' !== $tagline ) {
 			$result .= ',' . $tagline;
