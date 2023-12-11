@@ -610,6 +610,15 @@ class Engine {
 		} else {
 			self::$logger->warning( sprintf(  '%s returned an unknown data format for % message.', $data['serial_number'], $data['type'] ) );
 		}
+		if ($data['type'] == 'hub_status') {
+			if ( array_key_exists( 'radio_stats', $data ) ) {
+				$result['radio_stats_version']             = $data['radio_stats'][0];
+				$result['radio_stats_reboot_count']        = $data['radio_stats'][1];
+				$result['radio_stats_radio_status']        = $data['radio_stats'][2];
+				$result['radio_stats_i2c_bus_error_count'] = $data['radio_stats'][3];
+				$result['radio_stats_radio_network_id']    = $data['radio_stats'][4];
+			}
+		}
 		foreach ( $this->forgot_fields as $field ) {
 			if ( array_key_exists( $field, $result ) ) {
 				unset( $result[ $field ] );
@@ -800,9 +809,9 @@ class Engine {
 			}
 			if ( in_array( $d['type'], $this->filters ) ) {
 				$lines[] = $this->format_line( $d );
-				if ( $device['is_hub'] ) {
-					$lines = array_merge( $lines, $this->special_lines( $d ) );
-				}
+				//if ( $device['is_hub'] ) {
+				//	$lines = array_merge( $lines, $this->special_lines( $d ) );
+				//}
 				foreach ($lines as $line ) {
 					try {
 						if ( isset( $this->influx ) && 'observation' !== self::$running_mode ) {
