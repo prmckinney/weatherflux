@@ -21,7 +21,8 @@ use WeatherFlux\Logging\ConsoleHandler;
 use WeatherFlux\Logging\DockerConsoleHandler;
 use InfluxDB2\Client as InfluxClient;
 use InfluxDB2\Model\WritePrecision as InfluxWritePrecision;
-use \Monolog\Logger;
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
 
 /**
  * The main WeatherFlux engine class.
@@ -1009,7 +1010,7 @@ class Engine {
 		}
 		self::$logger = new Logger('weatherflux', [ new ConsoleHandler() ] );
 		if ( self::$docker ) {
-			self::$logger->pushHandler( new DockerConsoleHandler() );
+			self::$logger->pushHandler( new StreamHandler('php://stdout', Logger::DEBUG) );
 		}
 		if ( self::$do_log ) {
 			self::$logger->notice( 'Initializing ' . WF_NAME );
